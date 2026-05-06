@@ -1,0 +1,31 @@
+name: smarter_travel
+description: A new Flutter project for SmarterTravel.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_mcp: ^2.0.1
+  dio: ^5.4.0
+  intl: ^0.20.2
+  json_annotation: ^4.8.1
+  uuid: ^4.3.3
+  dio_smart_retry: ^6.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+flutter_mcp:
+  android:
+    foreground_service_types:
+      - dataSync
+
