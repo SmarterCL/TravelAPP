@@ -25,16 +25,20 @@ class FlightSearchResult {
 
   factory FlightSearchResult.fromJson(Map<String, dynamic> json) {
     return FlightSearchResult(
-      flightId: json['flightId'],
-      airline: json['airline'],
-      airlineCode: json['airlineCode'],
-      origin: json['origin'],
-      destination: json['destination'],
-      departureTime: DateTime.parse(json['departureTime']),
-      arrivalTime: DateTime.parse(json['arrivalTime']),
-      price: (json['price'] as num).toDouble(),
-      currency: json['currency'],
-      isLcc: json['isLcc'] ?? false,
+      flightId: json['flightId']?.toString() ?? '',
+      airline: json['airline']?.toString() ?? 'Unknown Airline',
+      airlineCode: json['airlineCode']?.toString() ?? '',
+      origin: json['origin']?.toString() ?? '',
+      destination: json['destination']?.toString() ?? '',
+      departureTime: json['departureTime'] != null
+          ? DateTime.tryParse(json['departureTime'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      arrivalTime: json['arrivalTime'] != null
+          ? DateTime.tryParse(json['arrivalTime'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency']?.toString() ?? 'USD',
+      isLcc: json['isLcc'] == true,
     );
   }
 }

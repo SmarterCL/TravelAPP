@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mcp/flutter_mcp.dart';
 import 'screens/search_screen.dart';
+import 'services/mcp_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,10 +18,19 @@ void main() async {
         // You can configure LLM providers here if needed
         autoStartLlmClient: [],
       ),
-    );
+    ).timeout(const Duration(seconds: 5), onTimeout: () {
+      debugPrint('FlutterMCP initialization timed out');
+      return null;
+    });
+
+    // Initialize the Travel Assistant setup (stores API keys, etc.)
+    await McpService().setupTravelAssistant().catchError((e) {
+      debugPrint('McpService setup failed: $e');
+    });
+
   } catch (e) {
     debugPrint('FlutterMCP initialization failed: $e');
-    // Continue starting the app even if MCP fails, or show an error screen
+    // Continue starting the app even if MCP fails
   }
 
   runApp(const MyApp());
