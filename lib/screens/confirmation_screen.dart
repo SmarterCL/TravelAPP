@@ -15,7 +15,7 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
   final _apiService = FlightApiService();
   Map<String, dynamic>? _tripDetails;
   bool _isLoading = true;
-  String _statusMessage = 'Finalizing your booking...';
+  String _statusMessage = 'Finalizando tu reserva...';
 
   @override
   void initState() {
@@ -25,15 +25,12 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   Future<void> _processOrder() async {
     try {
-      // Practice #6: Different fare types (LCC vs Non-LCC)
       if (!widget.isLcc) {
-        setState(() => _statusMessage = 'Issuing Ticket...');
-        // Practice #1: Order Ticket for Non-LCC
+        setState(() => _statusMessage = 'Emitiendo boleto...');
         await _apiService.orderTicket(widget.ptrUniqueID);
       }
 
-      setState(() => _statusMessage = 'Fetching Trip Details...');
-      // Practice #11: Post-Booking Validation (Call Trip Details)
+      setState(() => _statusMessage = 'Obteniendo detalles del viaje...');
       final details = await _apiService.getTripDetails(widget.ptrUniqueID);
       
       if (!mounted) return;
@@ -50,91 +47,16 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
     }
   }
 
-  void _showRefundDialog() async {
-    // Practice #12: Always call Quote APIs before execution
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Request Refund Quote?'),
-        content: const Text('This will check the cancellation charges before executing the refund.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('BACK')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              _handleRefundFlow();
-            },
-            child: const Text('GET QUOTE'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleRefundFlow() async {
-    setState(() => _isLoading = true);
-    try {
-      final quote = await _apiService.getRefundQuote(widget.ptrUniqueID);
-      
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Refund Quote Details'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildRow('Refundable Amount:', quote['refundableAmount']?.toString() ?? '0.00'),
-              _buildRow('Cancellation Fees:', quote['charges']?.toString() ?? '0.00'),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () async {
-                Navigator.pop(context);
-                await _executeRefund(quote['quoteId']);
-              },
-              child: const Text('CONFIRM REFUND'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-    }
-  }
-
-  Future<void> _executeRefund(String quoteId) async {
-    setState(() => _isLoading = true);
-    try {
-      await _apiService.executeRefund(widget.ptrUniqueID, quoteId);
-      // Practice #12: Use PTR Status to track final status
-      final updatedDetails = await _apiService.getTripDetails(widget.ptrUniqueID);
-      if (!mounted) return;
-      setState(() {
-        _tripDetails = updatedDetails;
-        _isLoading = false;
-        _statusMessage = 'Refund Processed';
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Refund Execution Error: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Booking Confirmation'),
-        automaticallyImplyLeading: false, // Prevent going back to booking form
+        title: const Text('Confirmación de Reserva', style: TextStyle(fontWeight: FontWeight.bold)),
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1A237E),
+        elevation: 0,
       ),
       body: Center(
         child: _isLoading
@@ -142,8 +64,8 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const CircularProgressIndicator(),
-                  const SizedBox(height: 16),
-                  Text(_statusMessage),
+                  const SizedBox(height: 20),
+                  Text(_statusMessage, style: const TextStyle(color: Colors.grey)),
                 ],
               )
             : _buildDetails(),
@@ -153,55 +75,74 @@ class _ConfirmationScreenState extends State<ConfirmationScreen> {
 
   Widget _buildDetails() {
     if (_tripDetails == null) {
-      return Text('Failed to load trip details. Status: $_statusMessage');
+      return Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 60),
+            const SizedBox(height: 16),
+            Text('No se pudieron cargar los detalles. Status: $_statusMessage', textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('VOLVER')),
+          ],
+        ),
+      );
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          const Icon(Icons.check_circle, color: Colors.green, size: 80),
-          const SizedBox(height: 16),
-          const Text('Booking Confirmed!', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildRow('PNR:', _tripDetails!['pnr'] ?? 'N/A'),
-                  _buildRow('Ticket No:', _tripDetails!['ticketNumber'] ?? 'N/A'),
-                  _buildRow('Status:', _tripDetails!['status'] ?? 'Confirmed'),
-                ],
-              ),
+          const Icon(Icons.check_circle, color: Colors.green, size: 100),
+          const SizedBox(height: 20),
+          const Text('¡Reserva Confirmada!', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          const Text('Tu viaje ha sido procesado con éxito', style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 40),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey[200]!),
+            ),
+            child: Column(
+              children: [
+                _buildInfoRow('PNR:', _tripDetails!['pnr'] ?? 'N/A'),
+                const Divider(height: 30),
+                _buildInfoRow('Nro. Boleto:', _tripDetails!['ticketNumber'] ?? 'N/A'),
+                const Divider(height: 30),
+                _buildInfoRow('Estado:', _tripDetails!['status'] ?? 'Confirmado'),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          TextButton.icon(
-            onPressed: _showRefundDialog,
-            icon: const Icon(Icons.cancel, color: Colors.red),
-            label: const Text('Cancel / Refund Booking', style: TextStyle(color: Colors.red)),
-          ),
           const Spacer(),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
-            child: const Text('BACK TO HOME'),
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1A237E),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              ),
+              child: const Text('VOLVER AL INICIO', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text(value),
-        ],
-      ),
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1A237E))),
+      ],
     );
   }
 }

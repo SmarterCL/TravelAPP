@@ -27,7 +27,6 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   Future<void> _revalidateAndFetchRules() async {
     setState(() => _isValidating = true);
     try {
-      // Practice #1 & #2: Sequence Search -> Validate Fare -> Fare Rule
       final isValid = await _apiService.validateFare(
         widget.flight.flightId, 
         widget.flight.price
@@ -48,7 +47,6 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
         }
       }
     } catch (e) {
-      debugPrint('Sequence error: $e');
       if (mounted) setState(() => _isValidating = false);
     }
   }
@@ -56,7 +54,13 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Flight Details')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Detalles del Vuelo', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1A237E),
+        elevation: 0,
+      ),
       body: _isValidating 
           ? const Center(
               child: Column(
@@ -64,33 +68,38 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Validating fare and fetching rules...', textAlign: TextAlign.center),
+                  Text('Validando tarifa y obteniendo reglas...', textAlign: TextAlign.center),
                 ],
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildFlightHeader(),
-                  const Divider(),
-                  _buildPriceSection(),
-                  const SizedBox(height: 24),
-                  const Text('Fare Rules', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                  const SizedBox(height: 8),
-                  _fareRules == null 
-                      ? const Text('Loading fare rules...') 
-                      : Text(_fareRules.toString()), 
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isValidating ? null : _validateAndProceed,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                      child: _isValidating 
-                          ? const CircularProgressIndicator(color: Colors.white) 
-                          : const Text('CONFIRM & PROCEED TO BOOKING'),
+                  _buildStatusHeader(),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFlightInfoCard(),
+                        const SizedBox(height: 30),
+                        const Text('Reglas de Tarifa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          child: Text(
+                            _fareRules?.toString() ?? 'Cargando reglas...',
+                            style: TextStyle(color: Colors.grey[700], height: 1.5),
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        _buildPriceFooter(),
+                      ],
                     ),
                   ),
                 ],
@@ -99,43 +108,91 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
     );
   }
 
-  Widget _buildFlightHeader() {
+  Widget _buildStatusHeader() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+      color: Colors.green[50],
+      child: Row(
+        children: [
+          const Icon(Icons.verified, color: Colors.green, size: 20),
+          const SizedBox(width: 8),
+          Text('Tarifa verificada y disponible', style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFlightInfoCard() {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 5,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.business, color: Colors.blue),
+                const SizedBox(width: 8),
+                Text(widget.flight.airline, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                const Spacer(),
+                Text(widget.flight.airlineCode, style: const TextStyle(color: Colors.grey)),
+              ],
+            ),
+            const SizedBox(height: 30),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildLocationDetail(widget.flight.origin, widget.flight.departureTime, 'Salida'),
+                const Icon(Icons.arrow_forward, color: Colors.blue, size: 30),
+                _buildLocationDetail(widget.flight.destination, widget.flight.arrivalTime, 'Llegada'),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationDetail(String city, DateTime time, String label) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('${widget.flight.airline} - ${widget.flight.airlineCode}', 
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        const SizedBox(height: 4),
+        Text(city, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(Formatters.formatDisplayTime(time), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+        Text(Formatters.formatDisplayDate(time), style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildPriceFooter() {
+    return Column(
+      children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildLocationCol(widget.flight.origin, widget.flight.departureTime),
-            const Icon(Icons.flight_takeoff),
-            _buildLocationCol(widget.flight.destination, widget.flight.arrivalTime),
+            const Text('Total a pagar:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              Formatters.formatCurrency(widget.flight.price, widget.flight.currency),
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.blue),
+            ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildLocationCol(String city, DateTime time) {
-    return Column(
-      children: [
-        Text(city, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        Text(Formatters.formatDisplayTime(time)),
-        Text(Formatters.formatDisplayDate(time), style: const TextStyle(fontSize: 12)),
-      ],
-    );
-  }
-
-  Widget _buildPriceSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Text('Total Fare:', style: TextStyle(fontSize: 18)),
-        Text(
-          Formatters.formatCurrency(widget.flight.price, widget.flight.currency),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: ElevatedButton(
+            onPressed: _isValidating ? null : _validateAndProceed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A237E),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            ),
+            child: const Text('CONFIRMAR Y CONTINUAR', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          ),
         ),
       ],
     );
@@ -145,7 +202,6 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
     setState(() => _isValidating = true);
     
     try {
-      // Practice #2: Always revalidate before booking
       final isValid = await _apiService.validateFare(
         widget.flight.flightId, 
         widget.flight.price
@@ -173,14 +229,14 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Price Changed'),
-        content: const Text('The fare for this flight has changed or is no longer available. Please search again.'),
+        title: const Text('Precio Actualizado'),
+        content: const Text('La tarifa para este vuelo ha cambiado o ya no está disponible. Por favor, realiza una nueva búsqueda.'),
         actions: [
           TextButton(
             onPressed: () {
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
-            child: const Text('RESTART SEARCH'),
+            child: const Text('REINICIAR BÚSQUEDA'),
           ),
         ],
       ),

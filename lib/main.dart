@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mcp/flutter_mcp.dart';
 import 'screens/main_screen.dart';
 import 'services/mcp_service.dart';
+import 'services/supabase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar Supabase
+  await SupabaseService.init();
 
   try {
     // Practice #9: Security Best Practices - Initialize MCP for secure storage and AI capabilities

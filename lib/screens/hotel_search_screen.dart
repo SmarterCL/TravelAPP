@@ -36,160 +36,189 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
-        // Optimization: Increase cacheExtent for smoother scrolling
-        cacheExtent: 1000,
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 120.0,
-            floating: true,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text('Find your Stay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
+      backgroundColor: const Color(0xFFF8F9FD),
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildCustomHeader(),
+            _buildSearchSection(),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _hotels.isEmpty
+                      ? _buildEmptyState()
+                      : ListView.builder(
+                          padding: const EdgeInsets.only(top: 10, bottom: 100),
+                          itemCount: _hotels.length,
+                          itemBuilder: (context, index) => _PremiumHotelCard(hotel: _hotels[index]),
+                        ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Hospedaje', style: TextStyle(color: Colors.grey, fontSize: 16)),
+              Text('Encuentra tu Hotel', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
+            ],
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                onSubmitted: (_) => _performSearch(),
-                decoration: InputDecoration(
-                  hintText: 'Search hotels, cities...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                ),
-              ),
-            ),
+          CircleAvatar(
+            backgroundColor: Colors.white,
+            radius: 25,
+            child: Icon(Icons.hotel, color: const Color(0xFF1A237E).withOpacity(0.7)),
           ),
-          _isLoading
-              ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
-              : SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) => HotelCard(hotel: _hotels[index]),
-                    childCount: _hotels.length,
-                    // Optimization: addAutomaticKeepAlives helps with list item state
-                  ),
-                ),
         ],
       ),
     );
   }
+
+  Widget _buildSearchSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20)],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onSubmitted: (_) => _performSearch(),
+          decoration: const InputDecoration(
+            hintText: 'Ciudad, nombre del hotel...',
+            prefixIcon: Icon(Icons.search, color: Color(0xFF1A237E)),
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.symmetric(vertical: 15),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.hotel_outlined, size: 80, color: Colors.grey[300]),
+        const SizedBox(height: 10),
+        const Text('No encontramos hoteles disponibles', style: TextStyle(color: Colors.grey)),
+      ],
+    );
+  }
 }
 
-class HotelCard extends StatelessWidget {
+class _PremiumHotelCard extends StatelessWidget {
   final Hotel hotel;
-  const HotelCard({super.key, required this.hotel});
+  const _PremiumHotelCard({required this.hotel});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 2,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: CachedNetworkImage(
-              imageUrl: hotel.imageUrl,
-              height: 180,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                height: 180,
-                color: Colors.grey[200],
-                child: const Center(child: CircularProgressIndicator()),
+          Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: CachedNetworkImage(
+                  imageUrl: hotel.imageUrl,
+                  height: 220,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
-              errorWidget: (context, url, error) => Container(
-                height: 180,
-                color: Colors.grey[200],
-                child: const Icon(Icons.error),
+              Positioned(
+                top: 20,
+                right: 20,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  child: const Icon(Icons.favorite_border, color: Colors.red, size: 20),
+                ),
               ),
-              // Optimization: Resize image in memory
-              memCacheHeight: 400,
-            ),
+              Positioned(
+                bottom: 15,
+                left: 20,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(15)),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.star, color: Colors.amber, size: 16),
+                      Text(' ${hotel.rating}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(hotel.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 20),
-                        Text(' ${hotel.rating}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
+                    Expanded(child: Text(hotel.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+                    Text('\$${hotel.pricePerNight}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.grey),
-                    Text(hotel.location, style: const TextStyle(color: Colors.grey)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: hotel.amenities.take(3).map((a) => Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(5)),
-                    child: Text(a, style: const TextStyle(fontSize: 12, color: Colors.blue)),
-                  )).toList(),
-                ),
-                const Divider(height: 24),
+                const SizedBox(height: 5),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text.rich(
-                      TextSpan(
-                        text: '\$${hotel.pricePerNight}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
-                        children: const [
-                          TextSpan(text: ' / night', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.grey)),
-                        ],
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on, size: 14, color: Colors.blue),
+                        Text(' ${hotel.location}', style: const TextStyle(color: Colors.grey)),
+                      ],
                     ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A237E),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        elevation: 0,
-                      ),
-                      child: const Text('View Details'),
-                    ),
+                    const Text('por noche', style: TextStyle(color: Colors.grey, fontSize: 12)),
                   ],
+                ),
+                const SizedBox(height: 15),
+                Wrap(
+                  spacing: 10,
+                  children: hotel.amenities.take(3).map((a) => _AmenityTag(text: a)).toList(),
                 ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AmenityTag extends StatelessWidget {
+  final String text;
+  const _AmenityTag({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(color: const Color(0xFFF1F4FF), borderRadius: BorderRadius.circular(10)),
+      child: Text(text, style: const TextStyle(fontSize: 11, color: Color(0xFF1A237E), fontWeight: FontWeight.w600)),
     );
   }
 }

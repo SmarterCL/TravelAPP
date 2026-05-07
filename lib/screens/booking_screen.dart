@@ -18,8 +18,6 @@ class _BookingScreenState extends State<BookingScreen> {
   final _lastNameController = TextEditingController();
   final _apiService = FlightApiService();
   bool _isBooking = false;
-  
-  // Practice #3: Unique ID per transaction attempt to ensure idempotency
   late final String _transactionUniqueId;
 
   @override
@@ -38,37 +36,91 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Passenger Details')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Datos del Pasajero', style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1A237E),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Practice #7: Ensure passenger names match government ID
-              TextFormField(
-                controller: _firstNameController,
-                decoration: const InputDecoration(labelText: 'First Name (as per Passport)'),
-                validator: (value) => value!.isEmpty ? 'Required' : null,
-              ),
-              TextFormField(
-                controller: _lastNameController,
-                decoration: const InputDecoration(labelText: 'Last Name (as per Passport)'),
-                validator: (value) => value!.isEmpty ? 'Required' : null,
-              ),
-              const Spacer(),
+              _buildSummaryHeader(),
+              const SizedBox(height: 30),
+              const Text('Información Personal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+              _buildTextField(_firstNameController, 'Nombres (como en el pasaporte)'),
+              const SizedBox(height: 15),
+              _buildTextField(_lastNameController, 'Apellidos (como en el pasaporte)'),
+              const SizedBox(height: 40),
+              _buildInfoNote(),
+              const SizedBox(height: 60),
               SizedBox(
                 width: double.infinity,
+                height: 55,
                 child: ElevatedButton(
                   onPressed: _isBooking ? null : _handleBooking,
-                  child: _isBooking 
-                      ? const CircularProgressIndicator() 
-                      : const Text('CONFIRM BOOKING'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A237E),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                  child: _isBooking
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('CONFIRMAR RESERVA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryHeader() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: Colors.blue[50], borderRadius: BorderRadius.circular(15)),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Estás reservando un vuelo de ${widget.flight.origin} a ${widget.flight.destination} con ${widget.flight.airline}',
+              style: const TextStyle(fontSize: 13, color: Colors.blue),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+      validator: (value) => value!.isEmpty ? 'Campo obligatorio' : null,
+    );
+  }
+
+  Widget _buildInfoNote() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: Colors.orange[50], borderRadius: BorderRadius.circular(10)),
+      child: const Text(
+        'Asegúrate de que los nombres coincidan exactamente con tu identificación oficial para evitar problemas al abordar.',
+        style: TextStyle(fontSize: 12, color: Colors.orange),
       ),
     );
   }
@@ -80,9 +132,8 @@ class _BookingScreenState extends State<BookingScreen> {
     try {
       final bookingData = {
         'flightId': widget.flight.flightId,
-        'uniqueID': _transactionUniqueId, // Practice #3
+        'uniqueID': _transactionUniqueId,
         'passengers': [
-
           {
             'firstName': _firstNameController.text,
             'lastName': _lastNameController.text,
@@ -91,8 +142,6 @@ class _BookingScreenState extends State<BookingScreen> {
         ],
       };
 
-      // Practice #3: Idempotency handled in service via uniqueID
-      // Practice #5: ptrUniqueID returned from service
       final ptrUniqueID = await _apiService.bookFlight(bookingData);
 
       if (!mounted) return;
@@ -108,7 +157,7 @@ class _BookingScreenState extends State<BookingScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booking Error: $e')),
+        SnackBar(content: Text('Error en la reserva: $e')),
       );
     } finally {
       if (mounted) {
