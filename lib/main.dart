@@ -12,8 +12,8 @@ void main() async {
       MCPConfig(
         appName: 'SmarterTravel',
         appVersion: '1.0.0',
-        useBackgroundService: true,
-        useNotification: true,
+        useBackgroundService: false,
+        useNotification: false,
         autoStart: true,
         // You can configure LLM providers here if needed
         autoStartLlmClient: [],
