@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mcp/flutter_mcp.dart';
-import 'screens/search_screen.dart';
+import 'screens/main_screen.dart';
 import 'services/mcp_service.dart';
 
 void main() async {
@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, primary: const Color(0xFF1A237E)),
         useMaterial3: true,
       ),
-      home: const SearchScreen(),
+      home: const MainScreen(),
     );
   }
 }
