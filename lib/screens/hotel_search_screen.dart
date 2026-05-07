@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/hotel_service.dart';
 import '../models/hotel.dart';
 
@@ -22,12 +23,14 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   }
 
   Future<void> _performSearch() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     final results = await _hotelService.searchHotels(_searchController.text);
-    setState(() {
-      _hotels = results;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _hotels = results;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -35,6 +38,8 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: CustomScrollView(
+        // Optimization: Increase cacheExtent for smoother scrolling
+        cacheExtent: 1000,
         slivers: [
           SliverAppBar(
             expandedHeight: 120.0,
@@ -77,30 +82,49 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
               ? const SliverFillRemaining(child: Center(child: CircularProgressIndicator()))
               : SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) => _buildHotelCard(_hotels[index]),
+                    (context, index) => HotelCard(hotel: _hotels[index]),
                     childCount: _hotels.length,
+                    // Optimization: addAutomaticKeepAlives helps with list item state
                   ),
                 ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildHotelCard(Hotel hotel) {
+class HotelCard extends StatelessWidget {
+  final Hotel hotel;
+  const HotelCard({super.key, required this.hotel});
+
+  @override
+  Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 3,
+      elevation: 2,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-            child: Image.network(
-              hotel.imageUrl,
+            child: CachedNetworkImage(
+              imageUrl: hotel.imageUrl,
               height: 180,
               width: double.infinity,
               fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                height: 180,
+                color: Colors.grey[200],
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+              errorWidget: (context, url, error) => Container(
+                height: 180,
+                color: Colors.grey[200],
+                child: const Icon(Icons.error),
+              ),
+              // Optimization: Resize image in memory
+              memCacheHeight: 400,
             ),
           ),
           Padding(
@@ -143,7 +167,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                     Text.rich(
                       TextSpan(
                         text: '\$${hotel.pricePerNight}',
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
                         children: const [
                           TextSpan(text: ' / night', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.grey)),
                         ],
@@ -155,6 +179,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                         backgroundColor: const Color(0xFF1A237E),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        elevation: 0,
                       ),
                       child: const Text('View Details'),
                     ),
